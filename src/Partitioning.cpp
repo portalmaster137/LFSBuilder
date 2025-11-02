@@ -78,6 +78,7 @@ bool setup_partitions(const std::string &device) {
     // Create filesystems
     if (!run_cmd("mkfs.vfat -F 32 -n BOOT '" + p1 + "'")) return false;
     if (!run_cmd("mkswap -L SWAP '" + p2 + "'")) return false;
+    if (!run_cmd("swapon " + p2)) return false;
     if (!run_cmd("mkfs.ext4 -F -L ROOT '" + p3 + "'")) return false;
 
     // Verify with blkid
@@ -110,7 +111,7 @@ bool mount_partitions() {
     } else {
         std::fprintf(stderr, "mount_partitions: %s already mounted\n", lfs.c_str());
     }
-    ok = ok && run_cmd("mkdir -p '" + boot + "'");
+    ok = run_cmd("mkdir -p '" + boot + "'");
     if (!ok) return false;
     bool boot_mounted = run_cmd("mountpoint -q '" + boot + "'");
     if (!boot_mounted) {
