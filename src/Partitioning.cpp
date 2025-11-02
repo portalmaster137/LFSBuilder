@@ -100,7 +100,6 @@ bool mount_partitions() {
     std::string boot = lfs + "/boot";
 
     ok = ok && run_cmd("mkdir -p '" + lfs + "'");
-    ok = ok && run_cmd("mkdir -p '" + boot + "'");
     if (!ok) return false;
 
     // If already mounted, skip mounting to keep idempotency
@@ -111,7 +110,8 @@ bool mount_partitions() {
     } else {
         std::fprintf(stderr, "mount_partitions: %s already mounted\n", lfs.c_str());
     }
-
+    ok = ok && run_cmd("mkdir -p '" + boot + "'");
+    if (!ok) return false;
     bool boot_mounted = run_cmd("mountpoint -q '" + boot + "'");
     if (!boot_mounted) {
         // Mount BOOT (vfat) by label; restrict permissions
