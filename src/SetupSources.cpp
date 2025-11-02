@@ -18,6 +18,7 @@ bool setup_sources() {
     run_cmd_with_prefix("chmod -v a+wt " + lfs_sources, "[Sources]");
     run_cmd_with_prefix("curl " + lfsurl + " -o " + lfs_package_tar, "[Sources]");
     run_command("tar -xpvf " + lfs_package_tar, lfs_sources, "[Sources]");
-
+    run_command("mv 12.4-rc1/* .", lfs_sources, "[Sources]");
+    run_command("rm -rf 12.4-rc1/", lfs_sources, "[Sources]");
     return true;
 }
