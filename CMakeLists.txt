@@ -7,6 +7,7 @@ add_executable(LFSBuilder
         src/app.cpp
         src/ToolsCheck.cpp
         src/Partitioning.cpp
+        src/RunCmd.cpp
 )
 
 target_include_directories(LFSBuilder PRIVATE include external)

@@ -3,6 +3,7 @@
 //
 #include "Partitioning.h"
 #include "Consts.h"
+#include "RunCmd.h"
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -27,17 +28,6 @@ static std::string part_suffix(const std::string &device) {
     return "";
 }
 
-static bool run_cmd(const std::string &cmd) {
-    std::fprintf(stderr, "[partition] $ %s\n", cmd.c_str());
-    int rc = std::system(cmd.c_str());
-#ifdef __unix__
-    if (rc == -1) return false;
-    if (WIFEXITED(rc)) return WEXITSTATUS(rc) == 0;
-    return false;
-#else
-    return rc == 0;
-#endif
-}
 
 bool setup_partitions(const std::string &device) {
     // Basic sanity checks
@@ -63,29 +53,29 @@ bool setup_partitions(const std::string &device) {
     //  - 1MiB..513MiB  -> 512MiB FAT32 (ESP)
     //  - 513MiB..4609MiB -> 4096MiB swap (4GiB)
     //  - 4609MiB..100% -> ext4 root
-    if (!run_cmd("parted -s '" + device + "' mklabel gpt")) return false;
-    if (!run_cmd("parted -s '" + device + "' mkpart ESP fat32 1MiB 513MiB")) return false;
-    if (!run_cmd("parted -s '" + device + "' set 1 esp on")) return false;
-    if (!run_cmd("parted -s '" + device + "' mkpart swap linux-swap 513MiB 4609MiB")) return false;
-    if (!run_cmd("parted -s '" + device + "' mkpart root ext4 4609MiB 100%")) return false;
+    if (!run_cmd_with_prefix("parted -s '" + device + "' mklabel gpt", "[partition]")) return false;
+    if (!run_cmd_with_prefix("parted -s '" + device + "' mkpart ESP fat32 1MiB 513MiB", "[partition]")) return false;
+    if (!run_cmd_with_prefix("parted -s '" + device + "' set 1 esp on", "[partition]")) return false;
+    if (!run_cmd_with_prefix("parted -s '" + device + "' mkpart swap linux-swap 513MiB 4609MiB", "[partition]")) return false;
+    if (!run_cmd_with_prefix("parted -s '" + device + "' mkpart root ext4 4609MiB 100%", "[partition]")) return false;
 
     // Inform kernel of partition changes
-    run_cmd("partprobe '" + device + "'");
-    run_cmd("udevadm settle");
+    run_cmd_with_prefix("partprobe '" + device + "'", "[partition]");
+    run_cmd_with_prefix("udevadm settle", "[partition]");
     // Sleep briefly to ensure nodes appear
     usleep(300 * 1000);
 
     // Create filesystems
-    if (!run_cmd("mkfs.vfat -F 32 -n BOOT '" + p1 + "'")) return false;
-    if (!run_cmd("mkswap -L SWAP '" + p2 + "'")) return false;
-    if (!run_cmd("swapon " + p2)) return false;
-    if (!run_cmd("mkfs.ext4 -F -L ROOT '" + p3 + "'")) return false;
+    if (!run_cmd_with_prefix("mkfs.vfat -F 32 -n BOOT '" + p1 + "'", "[partition]")) return false;
+    if (!run_cmd_with_prefix("mkswap -L SWAP '" + p2 + "'", "[partition]") ) return false;
+    if (!run_cmd_with_prefix("swapon " + p2, "[partition]")) return false;
+    if (!run_cmd_with_prefix("mkfs.ext4 -F -L ROOT '" + p3 + "'", "[partition]")) return false;
 
     // Verify with blkid
     bool ok = true;
-    ok = ok && run_cmd("blkid '" + p1 + "'");
-    ok = ok && run_cmd("blkid '" + p2 + "'");
-    ok = ok && run_cmd("blkid '" + p3 + "'");
+    ok = ok && run_cmd_with_prefix("blkid '" + p1 + "'", "[partition]");
+    ok = ok && run_cmd_with_prefix("blkid '" + p2 + "'", "[partition]");
+    ok = ok && run_cmd_with_prefix("blkid '" + p3 + "'", "[partition]");
 
     if (ok) {
         std::fprintf(stderr, "setup_partitions: Completed successfully on %s\n", device.c_str());
@@ -100,23 +90,23 @@ bool mount_partitions() {
     std::string lfs = std::string(LFS);
     std::string boot = lfs + "/boot";
 
-    ok = ok && run_cmd("mkdir -p '" + lfs + "'");
+    ok = ok && run_cmd_with_prefix("mkdir -p '" + lfs + "'", "[partition]");
     if (!ok) return false;
 
     // If already mounted, skip mounting to keep idempotency
-    bool root_mounted = run_cmd("mountpoint -q '" + lfs + "'");
+    bool root_mounted = run_cmd_with_prefix("mountpoint -q '" + lfs + "'", "[partition]");
     if (!root_mounted) {
         // Mount ROOT (ext4) by label
-        if (!run_cmd("mount -t ext4 -o defaults -L ROOT '" + lfs + "'")) return false;
+        if (!run_cmd_with_prefix("mount -t ext4 -o defaults -L ROOT '" + lfs + "'", "[partition]")) return false;
     } else {
         std::fprintf(stderr, "mount_partitions: %s already mounted\n", lfs.c_str());
     }
-    ok = run_cmd("mkdir -p '" + boot + "'");
+    ok = run_cmd_with_prefix("mkdir -p '" + boot + "'", "[partition]");
     if (!ok) return false;
-    bool boot_mounted = run_cmd("mountpoint -q '" + boot + "'");
+    bool boot_mounted = run_cmd_with_prefix("mountpoint -q '" + boot + "'", "[partition]");
     if (!boot_mounted) {
         // Mount BOOT (vfat) by label; restrict permissions
-        if (!run_cmd("mount -t vfat -o umask=0077 -L BOOT '" + boot + "'")) return false;
+        if (!run_cmd_with_prefix("mount -t vfat -o umask=0077 -L BOOT '" + boot + "'", "[partition]")) return false;
     } else {
         std::fprintf(stderr, "mount_partitions: %s already mounted\n", boot.c_str());
     }

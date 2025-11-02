@@ -14,6 +14,10 @@
 #define LFS "/mnt/lfs"
 #endif
 
+#ifndef LFSPACKAGELINK
+#define LFSPACKAGELINK "https://lfs.gnlug.org/pub/lfs/lfs-packages/lfs-packages-12.4.tar"
+#endif
+
 // FAIL_FATAL: Print a fatal error message to stderr and terminate the process
 // Usage examples:
 //   FAIL_FATAL("Unexpected null pointer");
