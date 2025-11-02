@@ -27,4 +27,9 @@ int main(int argc, char *argv[]) {
     if (bool res = setup_partitions(block_device); !res) {
         FAIL_FATAL("Failed to setup partitions");
     }
+
+    // Step 2: Mount partitions to LFS and LFS/boot
+    if (bool res = mount_partitions(); !res) {
+        FAIL_FATAL("Failed to mount partitions");
+    }
 }
