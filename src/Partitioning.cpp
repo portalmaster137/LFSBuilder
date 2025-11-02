@@ -1,0 +1,90 @@
+//
+// Created by Junie (AI) on 11/2/25.
+//
+#include "Partitioning.h"
+#include "Consts.h"
+
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+
+static bool is_block_device(const std::string &path) {
+    struct stat st{};
+    if (stat(path.c_str(), &st) != 0) return false;
+    return S_ISBLK(st.st_mode);
+}
+
+static std::string part_suffix(const std::string &device) {
+    // For devices ending with a digit (e.g., /dev/nvme0n1, /dev/mmcblk0), use 'p'. Otherwise none.
+    if (!device.empty() && std::isdigit(device.back())) return "p";
+    return "";
+}
+
+static bool run_cmd(const std::string &cmd) {
+    std::fprintf(stderr, "[partition] $ %s\n", cmd.c_str());
+    int rc = std::system(cmd.c_str());
+#ifdef __unix__
+    if (rc == -1) return false;
+    if (WIFEXITED(rc)) return WEXITSTATUS(rc) == 0;
+    return false;
+#else
+    return rc == 0;
+#endif
+}
+
+bool setup_partitions(const std::string &device) {
+    // Basic sanity checks
+    if (device.empty()) {
+        std::fprintf(stderr, "setup_partitions: empty device path provided\n");
+        return false;
+    }
+    if (!is_block_device(device)) {
+        std::fprintf(stderr, "setup_partitions: %s is not a block device or not accessible\n", device.c_str());
+        return false;
+    }
+
+    std::fprintf(stderr, "WARNING: This will DESTROY all data on %s. Proceeding...\n", device.c_str());
+
+    // Determine partition naming scheme
+    std::string ps = part_suffix(device);
+    std::string p1 = device + ps + "1"; // /boot (FAT32)
+    std::string p2 = device + ps + "2"; // swap (4GiB)
+    std::string p3 = device + ps + "3"; // root (ext4)
+
+    // Create new GPT and partitions using parted (MiB units)
+    // Layout:
+    //  - 1MiB..513MiB  -> 512MiB FAT32 (ESP)
+    //  - 513MiB..4609MiB -> 4096MiB swap (4GiB)
+    //  - 4609MiB..100% -> ext4 root
+    if (!run_cmd("parted -s '" + device + "' mklabel gpt")) return false;
+    if (!run_cmd("parted -s '" + device + "' mkpart ESP fat32 1MiB 513MiB")) return false;
+    if (!run_cmd("parted -s '" + device + "' set 1 esp on")) return false;
+    if (!run_cmd("parted -s '" + device + "' mkpart swap linux-swap 513MiB 4609MiB")) return false;
+    if (!run_cmd("parted -s '" + device + "' mkpart root ext4 4609MiB 100%")) return false;
+
+    // Inform kernel of partition changes
+    run_cmd("partprobe '" + device + "'");
+    run_cmd("udevadm settle");
+    // Sleep briefly to ensure nodes appear
+    usleep(300 * 1000);
+
+    // Create filesystems
+    if (!run_cmd("mkfs.vfat -F 32 -n BOOT '" + p1 + "'")) return false;
+    if (!run_cmd("mkswap -L SWAP '" + p2 + "'")) return false;
+    if (!run_cmd("mkfs.ext4 -F -L ROOT '" + p3 + "'")) return false;
+
+    // Verify with blkid
+    bool ok = true;
+    ok = ok && run_cmd("blkid '" + p1 + "'");
+    ok = ok && run_cmd("blkid '" + p2 + "'");
+    ok = ok && run_cmd("blkid '" + p3 + "'");
+
+    if (ok) {
+        std::fprintf(stderr, "setup_partitions: Completed successfully on %s\n", device.c_str());
+    }
+    return ok;
+}
