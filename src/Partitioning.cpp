@@ -11,6 +11,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#ifdef __unix__
+#include <sys/wait.h>
+#endif
 
 static bool is_block_device(const std::string &path) {
     struct stat st{};
@@ -87,4 +90,35 @@ bool setup_partitions(const std::string &device) {
         std::fprintf(stderr, "setup_partitions: Completed successfully on %s\n", device.c_str());
     }
     return ok;
+}
+
+bool mount_partitions() {
+    bool ok = true;
+
+    // Ensure mount points exist
+    std::string lfs = std::string(LFS);
+    std::string boot = lfs + "/boot";
+
+    ok = ok && run_cmd("mkdir -p '" + lfs + "'");
+    ok = ok && run_cmd("mkdir -p '" + boot + "'");
+    if (!ok) return false;
+
+    // If already mounted, skip mounting to keep idempotency
+    bool root_mounted = run_cmd("mountpoint -q '" + lfs + "'");
+    if (!root_mounted) {
+        // Mount ROOT (ext4) by label
+        if (!run_cmd("mount -t ext4 -o defaults -L ROOT '" + lfs + "'")) return false;
+    } else {
+        std::fprintf(stderr, "mount_partitions: %s already mounted\n", lfs.c_str());
+    }
+
+    bool boot_mounted = run_cmd("mountpoint -q '" + boot + "'");
+    if (!boot_mounted) {
+        // Mount BOOT (vfat) by label; restrict permissions
+        if (!run_cmd("mount -t vfat -o umask=0077 -L BOOT '" + boot + "'")) return false;
+    } else {
+        std::fprintf(stderr, "mount_partitions: %s already mounted\n", boot.c_str());
+    }
+
+    return true;
 }

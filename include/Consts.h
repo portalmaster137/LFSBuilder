@@ -9,6 +9,11 @@
 #include <cstdio>
 #include <cstdlib>
 
+// Default LFS mount point
+#ifndef LFS
+#define LFS "/mnt/lfs"
+#endif
+
 // FAIL_FATAL: Print a fatal error message to stderr and terminate the process
 // Usage examples:
 //   FAIL_FATAL("Unexpected null pointer");
@@ -24,5 +29,7 @@
         std::exit(EXIT_FAILURE);                                                 \
     } while (0)
 #endif
+
+
 
 #endif //LFSBUILDER_CONSTS_H

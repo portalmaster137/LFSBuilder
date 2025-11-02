@@ -15,3 +15,4 @@
 // Returns true on success, false if any step fails. It prints diagnostic messages to stderr.
 // The caller is responsible for ensuring the device is correct and not in use.
 bool setup_partitions(const std::string &device);
+bool mount_partitions();
