@@ -6,6 +6,7 @@
 #include "ToolsCheck.h"
 #include "argparse.hpp"
 #include "Partitioning.h"
+#include "SetupSources.h"
 
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser app("LFSBuilder");
@@ -31,5 +32,9 @@ int main(int argc, char *argv[]) {
     // Step 2: Mount partitions to LFS and LFS/boot
     if (bool res = mount_partitions(); !res) {
         FAIL_FATAL("Failed to mount partitions");
+    }
+
+    if (bool res = setup_sources(); !res) {
+        FAIL_FATAL("Failed to setup sources");
     }
 }

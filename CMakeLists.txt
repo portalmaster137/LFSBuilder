@@ -8,6 +8,8 @@ add_executable(LFSBuilder
         src/ToolsCheck.cpp
         src/Partitioning.cpp
         src/RunCmd.cpp
+        include/SetupSources.h
+        src/SetupSources.cpp
 )
 
 target_include_directories(LFSBuilder PRIVATE include external)
