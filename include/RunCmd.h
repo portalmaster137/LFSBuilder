@@ -21,3 +21,9 @@ bool run_cmd(const std::string &cmd);
 // - Returns true if the command exits with status 0, false otherwise.
 // - This uses the platform shell to change directory and run the command in a single invocation.
 bool run_command(const std::string &cmd, const std::string &workdir, const char* prefix = nullptr);
+
+// Executes the given command as the specified user within `workdir`.
+// - Assumes the program runs as root and uses `runuser` (or equivalent) under the hood.
+// - Prints the command with the same prefix rules as `run_command` unless a custom `prefix` is given.
+// - Returns true if the command exits with status 0, false otherwise.
+bool run_command_as(const std::string &cmd, const std::string &workdir, const std::string &user, const char* prefix = nullptr);

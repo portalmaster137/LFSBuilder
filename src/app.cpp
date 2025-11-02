@@ -5,7 +5,9 @@
 #include "Consts.h"
 #include "ToolsCheck.h"
 #include "argparse.hpp"
+#include "BuildSources.h"
 #include "Partitioning.h"
+#include "SetupLFSUser.h"
 #include "SetupSources.h"
 
 int main(int argc, char *argv[]) {
@@ -37,4 +39,10 @@ int main(int argc, char *argv[]) {
     if (bool res = setup_sources(); !res) {
         FAIL_FATAL("Failed to setup sources");
     }
+
+    if (bool res = setup_lfs_user(); !res) {
+        FAIL_FATAL("Failed to setup LFS user");
+    }
+
+    build_binutils_pass_1();
 }

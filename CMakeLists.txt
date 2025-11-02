@@ -10,6 +10,10 @@ add_executable(LFSBuilder
         src/RunCmd.cpp
         include/SetupSources.h
         src/SetupSources.cpp
+        include/SetupLFSUser.h
+        src/SetupLFSUser.cpp
+        include/BuildSources.h
+        src/sources/BinUtilsPass1.cpp
 )
 
 target_include_directories(LFSBuilder PRIVATE include external)
