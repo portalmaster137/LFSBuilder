@@ -5,6 +5,7 @@
 #include "Consts.h"
 #include "ToolsCheck.h"
 #include "argparse.hpp"
+#include "Partitioning.h"
 
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser app("LFSBuilder");
@@ -21,5 +22,9 @@ int main(int argc, char *argv[]) {
     //Step 1: Run host tools check
     if (bool res = run_host_tools_check(); !res) {
         FAIL_FATAL("Failed to run tools check");
+    }
+
+    if (bool res = setup_partitions(block_device); !res) {
+        FAIL_FATAL("Failed to setup partitions");
     }
 }
