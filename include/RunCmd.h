@@ -15,3 +15,9 @@ bool run_cmd_with_prefix(const std::string &cmd, const char* prefix = nullptr);
 
 // Convenience wrapper without a prefix.
 bool run_cmd(const std::string &cmd);
+
+// Executes the given command with the working directory set to `workdir`.
+// - Prints the command, prefixed by "[<workdir>] $" unless a custom `prefix` is provided.
+// - Returns true if the command exits with status 0, false otherwise.
+// - This uses the platform shell to change directory and run the command in a single invocation.
+bool run_command(const std::string &cmd, const std::string &workdir, const char* prefix = nullptr);
