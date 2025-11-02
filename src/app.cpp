@@ -7,12 +7,14 @@
 #include "argparse.hpp"
 #include "BuildSources.h"
 #include "Partitioning.h"
+#include "RunCmd.h"
 #include "SetupLFSUser.h"
 #include "SetupSources.h"
 
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser app("LFSBuilder");
     app.add_argument("block_device");
+    app.add_argument("--reset");
     try {
         app.parse_args(argc, argv);
     } catch (std::exception &e) {
